@@ -24,6 +24,8 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        map.delegate = self
+        
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.pausesLocationUpdatesAutomatically = false
@@ -31,7 +33,7 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
         locationManager.requestAlwaysAuthorization()
         
         locationManager.startMonitoringSignificantLocationChanges()
-        
+
         locations = Location.all()
         guard locations != nil else { return }
 
@@ -82,7 +84,7 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
            let subAdministrativeArea = placemark.subAdministrativeArea,
            let postalCode = placemark.postalCode,
            let country = placemark.country {
-            return "\(subThoroughfare) \(thoroughfare) \n \(subLocality) \n \(subAdministrativeArea) \n \(postalCode)) \n \(country)"
+            return "\(subThoroughfare) \(thoroughfare) \n \(subLocality) \n \(subAdministrativeArea) \n \(postalCode) \n \(country)"
         } else if let thoroughfare = placemark.thoroughfare,
                   let subLocality = placemark.subLocality,
                   let subAdministrativeArea = placemark.subAdministrativeArea,
@@ -102,7 +104,7 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
                   let country = placemark.country {
             return "\(postalCode) \n \(country)"
         } else if let country = placemark.country {
-            return "\(country))"
+            return "\(country)"
         }
         
         return "* Unknown *"
@@ -123,7 +125,7 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
             annotation.coordinate = location
             annotation.title = "🚶🏻‍♂️"
             annotation.subtitle = address
-            
+
             self.map.addAnnotation(annotation)
         }
     }
@@ -136,5 +138,51 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
             self.createLocationPoint(location: location)
         }
     }
+    
+    // MARK: MKMapViewDelegate Methods
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        if annotation.isKind(of: MKUserLocation.self) {
+            return nil
+        }
+        
+        if annotation.isKind(of: MKPointAnnotation.self) {
+            var pinView: MKAnnotationView? = mapView.dequeueReusableAnnotationView(withIdentifier: "customPin")
+            
+            if let pinView = pinView {
+                pinView.annotation = annotation
+                pinView.rightCalloutAccessoryView = createAccessoryView(annotation: annotation)
+            } else {
+                pinView = MKAnnotationView(annotation: annotation, reuseIdentifier: "customPin")
+                pinView?.canShowCallout = true
+                pinView?.image = UIImage(named: "pin2")
+                pinView?.calloutOffset = CGPoint(x: 0, y: 0)
+                pinView?.contentMode = .scaleToFill
+                pinView?.frame = CGRect(x: 0, y: 0, width: 20, height: 20)
+                pinView?.rightCalloutAccessoryView = createAccessoryView(annotation: annotation)
+            }
+            
+            return pinView
+        }
+        return nil
+    }
+    
+    func createAccessoryView(annotation: MKAnnotation) -> UIView {
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: 200, height: 200))
+        view.backgroundColor = UIColor.lightGray
+        
+        let label = UILabel(frame: CGRect(x: 0, y: 0, width: view.frame.size.width, height: 50))
+        label.numberOfLines = 0
+        label.font = UIFont(name: "Arial", size: 10.0)
+        label.adjustsFontForContentSizeCategory = true
+        label.adjustsFontSizeToFitWidth = true
+        if let subtitle = annotation.subtitle {
+            label.text = subtitle
+        }
+        
+        view.addSubview(label)
+        
+        return view
+    }
+    
 }
 
